@@ -54,42 +54,72 @@ function debug(message, data = null) {
 
 class Navigation {
     constructor() {
-        this.toggle = document.querySelector('.nav-toggle');
-        this.navLinks = document.querySelector('.nav-links');
-        this.init();
+        try {
+            this.toggle = document.querySelector('.nav-toggle');
+            this.navLinks = document.querySelector('.nav-links');
+            this.init();
+        } catch (error) {
+            debug('Navigation constructor error:', error);
+        }
     }
 
     init() {
-        // Mobile menu toggle
-        if (this.toggle) {
-            this.toggle.addEventListener('click', () => this.toggleMenu());
-        }
+        try {
+            // Mobile menu toggle
+            if (this.toggle) {
+                this.toggle.addEventListener('click', (e) => {
+                    try {
+                        this.toggleMenu();
+                    } catch (error) {
+                        debug('Toggle menu error:', error);
+                    }
+                });
+            }
 
-        // Close menu on link click
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', () => {
-                this.closeMenu();
+            // Close menu on link click
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    try {
+                        this.closeMenu();
+                    } catch (error) {
+                        debug('Close menu error:', error);
+                    }
+                });
             });
-        });
 
-        // Close menu on scroll (optional)
-        window.addEventListener('scroll', () => {
-            this.closeMenu();
-        });
+            // Close menu on scroll
+            window.addEventListener('scroll', () => {
+                try {
+                    this.closeMenu();
+                } catch (error) {
+                    debug('Scroll handler error:', error);
+                }
+            });
 
-        debug('Navigation initialized');
+            debug('Navigation initialized');
+        } catch (error) {
+            debug('Navigation init error:', error);
+        }
     }
 
     toggleMenu() {
-        this.toggle.classList.toggle('active');
-        this.navLinks.style.display = 
-            this.navLinks.style.display === 'flex' ? 'none' : 'flex';
+        try {
+            this.toggle.classList.toggle('active');
+            this.navLinks.style.display = 
+                this.navLinks.style.display === 'flex' ? 'none' : 'flex';
+        } catch (error) {
+            debug('Toggle menu error:', error);
+        }
     }
 
     closeMenu() {
-        this.toggle?.classList.remove('active');
-        if (this.navLinks) {
-            this.navLinks.style.display = 'none';
+        try {
+            this.toggle?.classList.remove('active');
+            if (this.navLinks) {
+                this.navLinks.style.display = 'none';
+            }
+        } catch (error) {
+            debug('Close menu error:', error);
         }
     }
 }
@@ -135,31 +165,141 @@ class MapHandler {
 class WeatherHandler {
     constructor() {
         this.widget = document.getElementById('weather-widget');
+        this.nea_api = 'https://api.data.gov.sg/v1/environment/4-day-weather-forecast';
         this.init();
     }
 
     init() {
         debug('Weather handler initialized');
-        this.loadPlaceholder();
-        // Uncomment for live updates
-        // setInterval(() => this.updateWeather(), CONFIG.weatherRefreshInterval);
+        this.updateWeather();
+        // Update weather every 10 minutes
+        setInterval(() => this.updateWeather(), CONFIG.weatherRefreshInterval);
     }
 
-    loadPlaceholder() {
-        if (this.widget) {
-            this.widget.innerHTML = `
-                <div class="weather-placeholder" style="grid-column: 1 / -1;">
-                    <p style="font-size: 2rem; margin: 0;">☀️</p>
-                    <p style="color: #0066CC; font-weight: 600;">Weather Integration</p>
-                    <p style="color: #666; font-size: 0.9rem;">OpenWeatherMap API coming soon</p>
-                </div>
-            `;
+    /**
+     * Weather emoji mapping based on forecast type
+     */
+    getWeatherEmoji(forecastType) {
+        const emojiMap = {
+            'Partly Cloudy': '⛅',
+            'Partly Cloudy (Day)': '⛅',
+            'Partly Cloudy (Night)': '🌙',
+            'Cloudy': '☁️',
+            'Overcast': '☁️',
+            'Rainy': '🌧️',
+            'Light Rain': '🌦️',
+            'Moderate Rain': '🌧️',
+            'Heavy Rain': '⛈️',
+            'Thundery Showers': '⛈️',
+            'Sunny': '☀️',
+            'Fair': '☀️',
+            'Windy': '💨',
+            'Snow': '❄️',
+            'Hazy': '😶‍🌫️'
+        };
+        return emojiMap[forecastType] || '🌤️';
+    }
+
+    /**
+     * Format date to display format (e.g., "Mon, 1 Dec")
+     */
+    formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-SG', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+
+    /**
+     * Fetch and display weather from NEA API
+     */
+    async updateWeather() {
+        try {
+            debug('Fetching weather from NEA API');
+            const response = await fetch(this.nea_api);
+            
+            if (!response.ok) {
+                throw new Error(`NEA API error: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            this.displayWeather(data);
+        } catch (error) {
+            debug('Weather fetch error:', error);
+            this.showError(error.message);
         }
     }
 
-    async updateWeather() {
-        // TODO: Fetch weather data from API
-        debug('Fetching weather data');
+    /**
+     * Display weather forecast in grid format
+     */
+    displayWeather(data) {
+        if (!this.widget || !data.items || !data.items[0]) {
+            this.showError('Weather data unavailable');
+            return;
+        }
+
+        const forecasts = data.items[0].general;
+        const itemForecasts = data.items[0].forecasts || [];
+        let html = `
+            <div class="weather-current">
+                <div class="weather-summary">
+                    <h3>General Forecast</h3>
+                    <p class="weather-text">Humidity: ${forecasts.relative_humidity.low}% - ${forecasts.relative_humidity.high}%</p>
+                    <p class="weather-text">Wind: ${forecasts.wind.speed.low}km/h - ${forecasts.wind.speed.high}km/h</p>
+                    <p class="weather-forecast-text">${forecasts.forecast}</p>
+                </div>
+            </div>
+            <div class="weather-days">
+        `;
+
+        // Get unique days for 4-day forecast
+        const uniqueDays = new Map();
+        itemForecasts.forEach(forecast => {
+            const dateKey = forecast.date;
+            if (!uniqueDays.has(dateKey)) {
+                uniqueDays.set(dateKey, forecast);
+            }
+        });
+
+        let dayCount = 0;
+        uniqueDays.forEach((forecast, dateKey) => {
+            if (dayCount < 4) {
+                const emoji = this.getWeatherEmoji(forecast.forecast);
+                const formattedDate = this.formatDate(dateKey);
+                html += `
+                    <div class="weather-card">
+                        <div class="weather-date">${formattedDate}</div>
+                        <div class="weather-emoji">${emoji}</div>
+                        <div class="weather-type">${forecast.forecast}</div>
+                        <div class="weather-temp">${forecast.temperature.low}°C - ${forecast.temperature.high}°C</div>
+                    </div>
+                `;
+                dayCount++;
+            }
+        });
+
+        html += `</div>`;
+        this.widget.innerHTML = html;
+        debug('Weather display updated');
+    }
+
+    /**
+     * Show error message
+     */
+    showError(message) {
+        if (this.widget) {
+            this.widget.innerHTML = `
+                <div class="weather-error">
+                    <p style="font-size: 1.5rem; margin: 0;">⚠️</p>
+                    <p style="color: #d9534f; font-weight: 600; margin-top: 0.5rem;">Unable to load weather</p>
+                    <p style="color: #666; font-size: 0.9rem;">${message}</p>
+                    <p style="color: #999; font-size: 0.85rem; margin-top: 0.5rem;">Please check your connection and refresh</p>
+                </div>
+            `;
+        }
     }
 }
 
@@ -202,20 +342,53 @@ class CrewManager {
 
 class CTAHandler {
     constructor() {
-        this.button = document.querySelector('.cta-button');
-        this.init();
-    }
-
-    init() {
-        if (this.button) {
-            this.button.addEventListener('click', () => this.handleCTA());
+        try {
+            this.button = document.querySelector('.cta-button');
+            this.init();
+        } catch (error) {
+            debug('CTAHandler constructor error:', error);
         }
     }
 
-    handleCTA() {
-        debug('CTA button clicked');
-        // TODO: Route to signup/onboarding
-        alert('Welcome to ShoreSquad! Sign-up coming soon.');
+    init() {
+        try {
+            if (this.button) {
+                this.button.addEventListener('click', (e) => {
+                    try {
+                        this.handleCTA(e);
+                    } catch (error) {
+                        debug('CTA click error:', error);
+                    }
+                });
+                debug('CTA handler initialized');
+            }
+        } catch (error) {
+            debug('CTA init error:', error);
+        }
+    }
+
+    handleCTA(event) {
+        try {
+            event.preventDefault();
+            const button = event.target;
+            
+            // Show loading state
+            const originalText = button.textContent;
+            button.textContent = 'Loading...';
+            button.disabled = true;
+
+            // Simulate async action
+            setTimeout(() => {
+                debug('CTA button clicked');
+                alert('Welcome to ShoreSquad! Sign-up coming soon.');
+                
+                // Restore button state
+                button.textContent = originalText;
+                button.disabled = false;
+            }, 500);
+        } catch (error) {
+            debug('CTA handle error:', error);
+        }
     }
 }
 
@@ -225,21 +398,46 @@ class CTAHandler {
 
 class PerformanceMonitor {
     constructor() {
-        this.init();
+        try {
+            this.init();
+        } catch (error) {
+            debug('PerformanceMonitor constructor error:', error);
+        }
     }
 
     init() {
-        // Report performance metrics
-        window.addEventListener('load', () => {
-            this.reportMetrics();
-        });
+        try {
+            // Report performance metrics
+            if (document.readyState === 'loading') {
+                window.addEventListener('load', () => this.reportMetrics());
+            } else {
+                this.reportMetrics();
+            }
+        } catch (error) {
+            debug('PerformanceMonitor init error:', error);
+        }
     }
 
     reportMetrics() {
-        if (window.performance && window.performance.timing) {
-            const timing = window.performance.timing;
-            const loadTime = timing.loadEventEnd - timing.navigationStart;
-            debug(`Page load time: ${loadTime}ms`);
+        try {
+            if (window.performance && window.performance.timing) {
+                const timing = window.performance.timing;
+                const loadTime = timing.loadEventEnd - timing.navigationStart;
+                const domReady = timing.domContentLoadedEventEnd - timing.navigationStart;
+                
+                debug(`Page load time: ${loadTime}ms`);
+                debug(`DOM ready time: ${domReady}ms`);
+                
+                // Log performance info
+                if (window.performance.getEntriesByType) {
+                    const navigationTiming = window.performance.getEntriesByType('navigation')[0];
+                    if (navigationTiming) {
+                        debug(`First Paint: ${navigationTiming.responseEnd - navigationTiming.requestStart}ms`);
+                    }
+                }
+            }
+        } catch (error) {
+            debug('reportMetrics error:', error);
         }
     }
 }
@@ -250,54 +448,96 @@ class PerformanceMonitor {
 
 class Accessibility {
     constructor() {
-        this.init();
+        try {
+            this.init();
+        } catch (error) {
+            debug('Accessibility constructor error:', error);
+        }
     }
 
     init() {
-        // Skip to main content link
-        this.addSkipLink();
-        
-        // Keyboard navigation
-        this.enhanceKeyboardNav();
-        
-        debug('Accessibility features enabled');
+        try {
+            // Skip to main content link
+            this.addSkipLink();
+            
+            // Keyboard navigation
+            this.enhanceKeyboardNav();
+            
+            // Announce page ready to screen readers
+            this.announceReady();
+            
+            debug('Accessibility features enabled');
+        } catch (error) {
+            debug('Accessibility init error:', error);
+        }
     }
 
     addSkipLink() {
-        const skipLink = document.createElement('a');
-        skipLink.href = '#main';
-        skipLink.textContent = 'Skip to main content';
-        skipLink.style.cssText = `
-            position: absolute;
-            top: -40px;
-            left: 0;
-            background: #00A86B;
-            color: white;
-            padding: 8px 16px;
-            z-index: 1000;
-        `;
-        
-        skipLink.addEventListener('focus', () => {
-            skipLink.style.top = '0';
-        });
-        
-        skipLink.addEventListener('blur', () => {
-            skipLink.style.top = '-40px';
-        });
-        
-        document.body.prepend(skipLink);
+        try {
+            const skipLink = document.createElement('a');
+            skipLink.href = '#main';
+            skipLink.textContent = 'Skip to main content';
+            skipLink.className = 'skip-link';
+            skipLink.style.cssText = `
+                position: absolute;
+                top: -40px;
+                left: 0;
+                background: #00A86B;
+                color: white;
+                padding: 8px 16px;
+                z-index: 1000;
+                text-decoration: none;
+                font-weight: 600;
+                border-radius: 0 0 4px 0;
+            `;
+            
+            skipLink.addEventListener('focus', () => {
+                skipLink.style.top = '0';
+            });
+            
+            skipLink.addEventListener('blur', () => {
+                skipLink.style.top = '-40px';
+            });
+            
+            document.body.prepend(skipLink);
+        } catch (error) {
+            debug('addSkipLink error:', error);
+        }
     }
 
     enhanceKeyboardNav() {
-        document.addEventListener('keydown', (e) => {
-            // Escape key to close mobile menu
-            if (e.key === 'Escape') {
-                const nav = document.querySelector('.nav-toggle');
-                if (nav?.classList.contains('active')) {
-                    nav.click();
+        try {
+            document.addEventListener('keydown', (e) => {
+                try {
+                    // Escape key to close mobile menu
+                    if (e.key === 'Escape') {
+                        const nav = document.querySelector('.nav-toggle');
+                        if (nav?.classList.contains('active')) {
+                            nav.click();
+                        }
+                    }
+                } catch (error) {
+                    debug('Keyboard nav error:', error);
                 }
-            }
-        });
+            });
+        } catch (error) {
+            debug('enhanceKeyboardNav error:', error);
+        }
+    }
+
+    announceReady() {
+        try {
+            // Create live region for screen reader announcements
+            const liveRegion = document.createElement('div');
+            liveRegion.setAttribute('role', 'status');
+            liveRegion.setAttribute('aria-live', 'polite');
+            liveRegion.setAttribute('aria-atomic', 'true');
+            liveRegion.style.cssText = 'position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;';
+            liveRegion.textContent = 'ShoreSquad page loaded and ready';
+            document.body.appendChild(liveRegion);
+        } catch (error) {
+            debug('announceReady error:', error);
+        }
     }
 }
 
@@ -310,19 +550,64 @@ class App {
         this.init();
     }
 
-    init() {
-        debug('ShoreSquad app initializing...');
-        
-        // Initialize all components
-        new Navigation();
-        new MapHandler();
-        new WeatherHandler();
-        new CrewManager();
-        new CTAHandler();
-        new PerformanceMonitor();
-        new Accessibility();
-        
-        debug('ShoreSquad app ready!');
+    async init() {
+        try {
+            debug('ShoreSquad app initializing...');
+            
+            // Initialize all components with error boundaries
+            try {
+                new Navigation();
+                debug('✓ Navigation initialized');
+            } catch (error) {
+                debug('✗ Navigation error:', error);
+            }
+
+            try {
+                new MapHandler();
+                debug('✓ Map handler initialized');
+            } catch (error) {
+                debug('✗ Map handler error:', error);
+            }
+
+            try {
+                new WeatherHandler();
+                debug('✓ Weather handler initialized');
+            } catch (error) {
+                debug('✗ Weather handler error:', error);
+            }
+
+            try {
+                new CrewManager();
+                debug('✓ Crew manager initialized');
+            } catch (error) {
+                debug('✗ Crew manager error:', error);
+            }
+
+            try {
+                new CTAHandler();
+                debug('✓ CTA handler initialized');
+            } catch (error) {
+                debug('✗ CTA handler error:', error);
+            }
+
+            try {
+                new PerformanceMonitor();
+                debug('✓ Performance monitor initialized');
+            } catch (error) {
+                debug('✗ Performance monitor error:', error);
+            }
+
+            try {
+                new Accessibility();
+                debug('✓ Accessibility features initialized');
+            } catch (error) {
+                debug('✗ Accessibility error:', error);
+            }
+            
+            debug('🚀 ShoreSquad app ready!');
+        } catch (error) {
+            console.error('[ShoreSquad] Critical error during initialization:', error);
+        }
     }
 }
 
