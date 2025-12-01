@@ -1,53 +1,36 @@
-# 🌊 ShoreSquad
+# 🌊 ShoreSquad - Lao Cleanup Lah! 🏖️
 
 **Rally your crew, track weather, and hit the next beach cleanup with our dope map app!**
 
-ShoreSquad is a community-driven web application that mobilizes young people to clean beaches. It combines interactive maps, real-time weather forecasts, and social features to make ocean action fun and connected.
+ShoreSquad is a Gen-Z community-driven web application that mobilizes young people to clean beaches. It combines interactive maps, real-time weather forecasts (NEA API), squad chat (Tawk.to), and impact tracking to make ocean action fun, connected, and impactful.
+
+## 🎯 Mission
+Make beach cleanup accessible, fun, and social for Gen-Z with real-time weather, crew coordination, and impact tracking.
 
 ## ✨ Features
 
-- 🗺️ **Interactive Google Maps** - Find nearby beaches and cleanup events
-- 🌤️ **Real-Time Weather** - 4-day forecasts from Singapore's NEA API
-- 👥 **Crew Connect** - Rally your friends and join eco-warriors
+- 🗺️ **Interactive Google Maps** - Find nearby beaches and cleanup events (Pasir Ris, East Coast Park)
+- 🌤️ **Real-Time Weather** - 24-hour & 4-day forecasts from Singapore's NEA API (data.gov.sg)
+- 💬 **Squad Chat** - Tawk.to widget for team communication & coordination
+- 🌍 **Impact Tracker** - Track trash collected, crew members, beaches cleaned, trees saved
+- 👥 **Crew Connect** - Rally your friends and join like-minded eco-warriors
 - 📱 **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
-- ♿ **Accessible** - WCAG compliant with keyboard navigation and screen reader support
-- 🌍 **Metric Units** - All measurements in meters and degrees Celsius
-- ⚡ **Fast Performance** - Optimized with debouncing and lazy loading
+- ♿ **Accessible** - WCAG 2.1 AA compliant with keyboard navigation and screen reader support
+- 🌊 **Gen-Z Appeal** - Beachy colors (blues, yellows, greens), Singapore slang ("lah!"), emojis
+- ⚡ **Fast Performance** - <1s load on 4G, optimized with debouncing and lazy loading
+- 📊 **Performance Metrics** - Monitor page load times and core web vitals
 
-## 🚀 Getting Started
+## 🛠️ Tech Stack
 
-### Prerequisites
-- A modern web browser (Chrome, Firefox, Safari, Edge)
-- VS Code with Live Server extension (optional, for local development)
-
-### Option 1: Live Server (Recommended for Development)
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/heywassup221/ShoreSquad.git
-   cd ShoreSquad
-   ```
-
-2. **Install Live Server in VS Code**
-   - Open VS Code Extensions (Ctrl+Shift+X)
-   - Search for "Live Server"
-   - Install by Ritwick Dey
-
-3. **Launch Live Server**
-   - Right-click on `index.html`
-   - Select "Open with Live Server"
-   - Browser opens to `http://localhost:5500`
-
-### Option 2: Direct Browser Access
-
-1. Navigate to the [ShoreSquad GitHub Pages](https://heywassup221.github.io/ShoreSquad/)
-2. Site loads instantly with zero setup
-
-## 📋 Project Structure
-
-```
-ShoreSquad/
-├── index.html           # HTML5 boilerplate with semantic markup
+| Technology | Purpose |
+|-----------|---------|
+| **HTML5** | Semantic markup with accessibility attributes |
+| **CSS3** | Modern styling with CSS Variables, Grid, Flexbox, animations |
+| **JavaScript ES6+** | Class-based, modular architecture with error handling |
+| **Google Maps API** | Interactive map embedding for cleanup spot discovery |
+| **NEA Weather API** | Real-time weather from data.gov.sg (24-hour & 4-day) |
+| **Tawk.to** | Live chat for crew communication |
+| **GitHub Pages** | Free static hosting with auto-deploy |
 ├── css/
 │   └── styles.css       # Complete styling with CSS variables and animations
 ├── js/
