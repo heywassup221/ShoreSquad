@@ -3,16 +3,19 @@
    =================================== 
    Primary: Ocean Blue (#0066CC) - Trust, stability
    Accent: Tropical Green (#00A86B) - Growth, eco-action
+   Secondary: Sunset Yellow (#FFD700) - Gen-Z energy
    Light: Sky Blue (#E0F2FF) - Clean, fresh
    Dark: Deep Navy (#001F4D) - Professional
-   Text: Charcoal (#2C3E50) - Readability
+   Beachy Sand: #F5DEB3 - Warm, inviting
 */
 
 :root {
     --primary-blue: #0066CC;
     --accent-green: #00A86B;
+    --sunset-yellow: #FFD700;
     --light-blue: #E0F2FF;
     --dark-navy: #001F4D;
+    --beachy-sand: #F5DEB3;
     --text-dark: #2C3E50;
     --text-light: #FFFFFF;
     --border-light: #D0E8FF;
@@ -477,6 +480,90 @@ button, a.button {
         font-size: 0.9rem;
         min-height: 2rem;
     }
+}
+
+/* ===================================
+   Impact Tracker Section
+   =================================== */
+
+.impact-section {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(0, 168, 107, 0.1));
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 4rem 1rem;
+}
+
+.impact-section h2 {
+    text-align: center;
+    color: var(--dark-navy);
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+}
+
+.impact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.impact-card {
+    background: linear-gradient(135deg, var(--text-light), #F9F9F9);
+    padding: 2rem;
+    border-radius: 16px;
+    border: 2px solid var(--sunset-yellow);
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.impact-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 12px 32px rgba(255, 215, 0, 0.3);
+    border-color: var(--accent-green);
+}
+
+.impact-icon {
+    font-size: 3rem;
+    margin-bottom: 0.75rem;
+    animation: bounce 2s ease-in-out infinite;
+}
+
+.impact-stat {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-blue);
+    margin-bottom: 0.5rem;
+}
+
+.impact-label {
+    font-size: 1rem;
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.impact-location {
+    font-size: 0.9rem;
+    color: #666;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-light);
+}
+
+.impact-caption {
+    text-align: center;
+    color: var(--dark-navy);
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, var(--beachy-sand), #FFFACD);
+    border-radius: 12px;
+    border-left: 4px solid var(--sunset-yellow);
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
 }
 
 /* ===================================

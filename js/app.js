@@ -165,15 +165,22 @@ class MapHandler {
 class WeatherHandler {
     constructor() {
         this.widget = document.getElementById('weather-widget');
-        this.nea_api = 'https://api.data.gov.sg/v1/environment/4-day-weather-forecast';
+        // NEA 24-hour API (more reliable for real-time)
+        this.nea_24h_api = 'https://api.data.gov.sg/v1/environment/24-hour-weather-forecast';
+        // Fallback to 4-day API
+        this.nea_4day_api = 'https://api.data.gov.sg/v1/environment/4-day-weather-forecast';
         this.init();
     }
 
     init() {
-        debug('Weather handler initialized');
-        this.updateWeather();
-        // Update weather every 10 minutes
-        setInterval(() => this.updateWeather(), CONFIG.weatherRefreshInterval);
+        try {
+            debug('Weather handler initialized');
+            this.updateWeather();
+            // Update weather every 10 minutes
+            setInterval(() => this.updateWeather(), CONFIG.weatherRefreshInterval);
+        } catch (error) {
+            debug('Weather init error:', error);
+        }
     }
 
     /**
@@ -204,12 +211,17 @@ class WeatherHandler {
      * Format date to display format (e.g., "Mon, 1 Dec")
      */
     formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-SG', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric'
-        });
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-SG', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+            });
+        } catch (error) {
+            debug('formatDate error:', error);
+            return dateString;
+        }
     }
 
     /**
@@ -218,7 +230,14 @@ class WeatherHandler {
     async updateWeather() {
         try {
             debug('Fetching weather from NEA API');
-            const response = await fetch(this.nea_api);
+            
+            // Try 24-hour API first (better for current conditions)
+            let response = await fetch(this.nea_24h_api);
+            
+            if (!response.ok) {
+                debug('24-hour API failed, trying 4-day API');
+                response = await fetch(this.nea_4day_api);
+            }
             
             if (!response.ok) {
                 throw new Error(`NEA API error: ${response.status}`);
@@ -236,69 +255,81 @@ class WeatherHandler {
      * Display weather forecast in grid format
      */
     displayWeather(data) {
-        if (!this.widget || !data.items || !data.items[0]) {
-            this.showError('Weather data unavailable');
-            return;
-        }
-
-        const forecasts = data.items[0].general;
-        const itemForecasts = data.items[0].forecasts || [];
-        let html = `
-            <div class="weather-current">
-                <div class="weather-summary">
-                    <h3>General Forecast</h3>
-                    <p class="weather-text">Humidity: ${forecasts.relative_humidity.low}% - ${forecasts.relative_humidity.high}%</p>
-                    <p class="weather-text">Wind: ${forecasts.wind.speed.low}km/h - ${forecasts.wind.speed.high}km/h</p>
-                    <p class="weather-forecast-text">${forecasts.forecast}</p>
-                </div>
-            </div>
-            <div class="weather-days">
-        `;
-
-        // Get unique days for 4-day forecast
-        const uniqueDays = new Map();
-        itemForecasts.forEach(forecast => {
-            const dateKey = forecast.date;
-            if (!uniqueDays.has(dateKey)) {
-                uniqueDays.set(dateKey, forecast);
+        try {
+            if (!this.widget || !data.items || !data.items[0]) {
+                this.showError('Weather data unavailable');
+                return;
             }
-        });
 
-        let dayCount = 0;
-        uniqueDays.forEach((forecast, dateKey) => {
-            if (dayCount < 4) {
-                const emoji = this.getWeatherEmoji(forecast.forecast);
-                const formattedDate = this.formatDate(dateKey);
-                html += `
-                    <div class="weather-card">
-                        <div class="weather-date">${formattedDate}</div>
-                        <div class="weather-emoji">${emoji}</div>
-                        <div class="weather-type">${forecast.forecast}</div>
-                        <div class="weather-temp">${forecast.temperature.low}°C - ${forecast.temperature.high}°C</div>
+            const items = data.items[0];
+            const forecasts = items.general;
+            const itemForecasts = items.forecasts || [];
+            
+            let html = `
+                <div class="weather-current">
+                    <div class="weather-summary">
+                        <h3>🏝️ Beach Vibes Today</h3>
+                        <p class="weather-text">💧 Humidity: ${forecasts.relative_humidity.low}% - ${forecasts.relative_humidity.high}%</p>
+                        <p class="weather-text">💨 Wind: ${forecasts.wind.speed.low}km/h - ${forecasts.wind.speed.high}km/h</p>
+                        <p class="weather-forecast-text">${forecasts.forecast}</p>
+                        <p class="weather-emoji" style="font-size: 2rem; margin-top: 0.5rem;">${this.getWeatherEmoji(forecasts.forecast)}</p>
                     </div>
-                `;
-                dayCount++;
-            }
-        });
+                </div>
+                <div class="weather-days">
+            `;
 
-        html += `</div>`;
-        this.widget.innerHTML = html;
-        debug('Weather display updated');
+            // Get unique days (limit to 4 days)
+            const uniqueDays = new Map();
+            itemForecasts.forEach(forecast => {
+                const dateKey = forecast.date;
+                if (!uniqueDays.has(dateKey) && uniqueDays.size < 4) {
+                    uniqueDays.set(dateKey, forecast);
+                }
+            });
+
+            let dayCount = 0;
+            uniqueDays.forEach((forecast, dateKey) => {
+                if (dayCount < 4) {
+                    const emoji = this.getWeatherEmoji(forecast.forecast);
+                    const formattedDate = this.formatDate(dateKey);
+                    html += `
+                        <div class="weather-card">
+                            <div class="weather-date">${formattedDate}</div>
+                            <div class="weather-emoji">${emoji}</div>
+                            <div class="weather-type">${forecast.forecast}</div>
+                            <div class="weather-temp">${forecast.temperature.low}°C - ${forecast.temperature.high}°C</div>
+                        </div>
+                    `;
+                    dayCount++;
+                }
+            });
+
+            html += `</div>`;
+            this.widget.innerHTML = html;
+            debug('✓ Weather display updated');
+        } catch (error) {
+            debug('displayWeather error:', error);
+            this.showError('Failed to display weather');
+        }
     }
 
     /**
      * Show error message
      */
     showError(message) {
-        if (this.widget) {
-            this.widget.innerHTML = `
-                <div class="weather-error">
-                    <p style="font-size: 1.5rem; margin: 0;">⚠️</p>
-                    <p style="color: #d9534f; font-weight: 600; margin-top: 0.5rem;">Unable to load weather</p>
-                    <p style="color: #666; font-size: 0.9rem;">${message}</p>
-                    <p style="color: #999; font-size: 0.85rem; margin-top: 0.5rem;">Please check your connection and refresh</p>
-                </div>
-            `;
+        try {
+            if (this.widget) {
+                this.widget.innerHTML = `
+                    <div class="weather-error">
+                        <p style="font-size: 1.5rem; margin: 0;">⚠️</p>
+                        <p style="color: #d9534f; font-weight: 600; margin-top: 0.5rem;">Unable to load weather, lah!</p>
+                        <p style="color: #666; font-size: 0.9rem;">${message}</p>
+                        <p style="color: #999; font-size: 0.85rem; margin-top: 0.5rem;">Please check your connection and refresh</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            debug('showError error:', error);
         }
     }
 }
